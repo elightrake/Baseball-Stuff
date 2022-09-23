@@ -1,0 +1,87 @@
+---
+title: "random shit"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr)
+```
+
+```{r idk}
+odds <- function(p, n){
+  runs <- runif(n)
+  sum(runs < p)
+}
+standardize <- function(x){
+  (x - mean(x, na.rm = T))/sd(x, na.rm = T)
+}
+hsd <- function(n,p){
+  one <- n^(1/2)
+  two <- (p * (1 - p))
+  return((two/n)^(1/2))
+}
+
+```
+
+```{r}
+skill <- 0.3
+avg.abs <- 4
+games <- 162
+n <- 1000
+avgs <- matrix(NA, n)
+colnames(avgs) <- "BA"
+for (i in 1:n) {
+  if(i%%100==0){print(i)}
+  pulls <- matrix(NA, games)
+  for(j in 1:games){
+  # if(i%%1000==0){print(i)}
+    pulls[j] <- odds(skill, avg.abs)
+    }
+# pack.freq <- table(pulls)/n
+# pack.freq
+# sum(pack.freq[-1])
+# sum(pulls)
+  avgs[i] <- sum(pulls)/(games*avg.abs)
+}
+avgs <- as.data.frame(avgs)
+avgs <- avgs %>%
+  mutate(stdBA = standardize(BA))
+quantile(avgs$BA, probs = c(0, .1, .25, .5, .75, .9, 1))
+avgs %>% summarize(mean = mean(BA), sd = sd(BA))
+```
+
+```{r}
+hsd <- function(n,p){
+  one <- n^(1/2)
+  two <- (p * (1 - p))
+  return((two/n)^(1/2))
+}
+probs <- NA
+for (i in 1:1000) {
+  
+skill <- 0.310
+togoAB <- 164
+sofarBA <- .5
+sofarAB <- 68
+sAB <- sofarAB + togoAB
+sims <- 1000
+sd <- hsd(togoAB, skill)
+#bas <- matrix(rnorm(sims, skill, sd))
+bas <- matrix(rbinom(sims, togoAB, skill)/togoAB)
+colnames(bas) <- "BA"
+bas <- as.data.frame(bas)
+bas <- bas %>%
+  mutate(sBA = sofarBA * (sofarAB/sAB) + BA * (togoAB/sAB),
+         stdBA = standardize(BA))
+quantile(bas$BA, probs = c(0, .05, .25, .5, .75, .95, 1))
+quantile(bas$sBA, probs = c(0, .05, .25, .5, .75, .95, 1))
+#bas %>% summarize(mean = mean(sBA), sd = sd(sBA), truesdminus = hsd - sd(BA))
+probs[i] <- sum(bas$sBA >= .3995)/1000
+
+}
+mean(probs)*100
+sd(probs)*100
+sum(dbinom(59:164,164,.31))*100
+```
